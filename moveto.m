@@ -9,8 +9,12 @@ mB.SmoothStart = 0;
 mB.SpeedRegulation = 0;
 
 speed=10
-ActionAtTachoLimit = 'Brake';
+%the gramma should be double checked when testing
+mA.ActionAtTachoLimit = 'Brake';
+mB.ActionAtTachoLimit = 'Brake';
 
+%need to check gramma
+position = [mA.getCurState.angle, mA.getCurState.angle];
 if position(1)<aplha
 	mA.Power = speed;
 	mA.TachoLimit = alpha-position(1);
@@ -28,3 +32,4 @@ end
 mA.SendToNXT();
 mB.SendToNXT();
 newposition=[alpha; beta];
+end

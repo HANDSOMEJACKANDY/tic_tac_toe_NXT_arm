@@ -6,28 +6,19 @@ MyNXT = COM_OpenNXT();
 COM_SetDefaultNXT(MyNXT);
 
 %alpha
-data(:,:,1) = [1 2 3
+alphaAngles = [1 2 3
 4 5 6
 7 8 9];
 %beta
-data(:,:,2) = [1 2 3
+betaAngles  = [1 2 3
 4 5 6
 7 8 9];
-%enable - disable when known to be filled
-data(:,:,3) = [1 1 1
-1 1 1
-1 1 1];
-%human pieces
-data(:,:,4) = [0 0 0
-0 0 0
-0 0 0];
-%computer pieces
-data(:,:,5) = [0 0 0
-0 0 0
-0 0 0];
-data(:,:,6) = [0; 0]
+%store the grid: -1 for human, 1 for computer, 0 for vaccancy
+grid  = zeros(3);
+%current position
+curPosition = [0; 0]
 
-data=scan(data)
+grid = scan(alphaAngles, betaAngles, grid)
 
 
 
