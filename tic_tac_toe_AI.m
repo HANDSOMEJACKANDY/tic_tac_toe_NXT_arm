@@ -19,6 +19,7 @@ for i = 1:9
     disp(game.curGrid);
     %check for winner
     whichWin = game.checkWin();
+    disp(whichWin);
     if whichWin ~= 0
         if whichWin == 1
             disp('comp win');

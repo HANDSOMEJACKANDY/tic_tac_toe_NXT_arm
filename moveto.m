@@ -1,4 +1,4 @@
-function newposition = moveto(alpha,beta,position)
+function newposition = moveto(alpha,beta)
 % move to a location
 mA = NXTMotor('A');
 mA.SmoothStart = 0;
@@ -8,22 +8,26 @@ mB = NXTMotor('B');
 mB.SmoothStart = 0;
 mB.SpeedRegulation = 0;
 
-speed=10
+speedA=40;
+speedB=100;
 %the gramma should be double checked when testing
 mA.ActionAtTachoLimit = 'Brake';
 mB.ActionAtTachoLimit = 'Brake';
 
 %need to check gramma
-position = [mA.getCurState.angle, mA.getCurState.angle];
+data = mA.readFromNXT();
+position = data.position;
 if position(1)<aplha
-	mA.Power = speed;
+	mA.Power = speedA;
 	mA.TachoLimit = alpha-position(1);
 else
 	mA.Power = -speed;
 	mA.TachoLimit = position(1)-alpha;
 end
+data = mB.readFromNXT();
+position = data.position;
 if position(2)<beta
-	mB.Power = speed;
+	mB.Power = speedB;
 	mB.TachoLimit = beta-position(2);
 else
 	mB.Power = -speed;
