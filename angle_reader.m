@@ -57,54 +57,52 @@ end
 COM_CloseNXT('all');
 
 function moveTo(alpha,beta)
-% move to a location
-mA = NXTMotor('A');
-mA.SmoothStart = 0;
-mA.SpeedRegulation = 1;
+    % move to a location
+    mA = NXTMotor('A');
+    mA.SmoothStart = 0;
+    mA.SpeedRegulation = 1;
 
-mB = NXTMotor('B');
-mB.SmoothStart = 0;
-mB.SpeedRegulation = 1;
+    mB = NXTMotor('B');
+    mB.SmoothStart = 0;
+    mB.SpeedRegulation = 1;
 
-speedA=10;
-speedB=40;
-%the gramma should be double checked when testing
-mA.ActionAtTachoLimit = 'Brake';
-mB.ActionAtTachoLimit = 'Brake';
+    speedA=10;
+    speedB=40;
+    %the gramma should be double checked when testing
+    mA.ActionAtTachoLimit = 'Brake';
+    mB.ActionAtTachoLimit = 'Brake';
 
-%need to check gramma
-data = mA.ReadFromNXT();
-position = data.Position;
-disp('cool');
-disp(position);
-disp(alpha);
-if position ~= alpha
-    if position<alpha
-        mA.Power = speedA;
-        mA.TachoLimit = alpha-position;
-    else
-        mA.Power = -speedA;
-        mA.TachoLimit = position-alpha;
+    %need to check gramma
+    data = mA.ReadFromNXT();
+    position = data.Position;
+    disp('cool');
+    disp(position);
+    disp(alpha);
+    if position ~= alpha
+        if position<alpha
+            mA.Power = speedA;
+            mA.TachoLimit = alpha-position;
+        else
+            mA.Power = -speedA;
+            mA.TachoLimit = position-alpha;
+        end
     end
-end
 
-data = mB.ReadFromNXT();
-position = data.Position;
-disp('cool');
-disp(position);
-disp(beta);
-if position ~= beta
-    if position<beta
-        mB.Power = speedB;
-        mB.TachoLimit = beta-position;
-    else
-        mB.Power = -speedB;
-        mB.TachoLimit = position-beta;
+    data = mB.ReadFromNXT();
+    position = data.Position;
+    disp('cool');
+    disp(position);
+    disp(beta);
+    if position ~= beta
+        if position<beta
+            mB.Power = speedB;
+            mB.TachoLimit = beta-position;
+        else
+            mB.Power = -speedB;
+            mB.TachoLimit = position-beta;
+        end
     end
-end
 
-
-
-mA.SendToNXT();
-mB.SendToNXT();
+    mA.SendToNXT();
+    mB.SendToNXT();
 end

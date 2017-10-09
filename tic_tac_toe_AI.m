@@ -1,10 +1,4 @@
 %starting of project of tic_tac_toe!
-alphaAngles = [1 2 3
-4 5 6
-7 8 9];
-betaAngles  = [1 2 3
-4 5 6
-7 8 9];
 game = Game;
 
 % Close connection to the NXT brick if there was one before
@@ -13,6 +7,16 @@ COM_CloseNXT('all');
 % Establish connection with the NXT brick
 MyNXT = COM_OpenNXT();
 COM_SetDefaultNXT(MyNXT);
+%init all three motors
+mA = NXTMotor('A');
+mB = NXTMotor('B');
+mC = NXTMotor('C');
+mA.ResetPosition();
+mB.ResetPosition();
+mC.ResetPosition();
+mA.SendToNXT();
+mB.SendToNXT();
+mC.SendToNXT();
 
 for i = 1:9
     disp(game.curGrid);
@@ -24,15 +28,17 @@ for i = 1:9
         while toc < 5
         end
         %scan for human input
-        position =  scan(alphaAngles, betaAngles, game.curGrid);
+        position =  scan(alphaAngles, betaAngles, game);
         if position(1) == 0 && position(0) == 0
-            disp('no piece sensed');
+            disp('no piece scanned');
             break;
         end
     else
         disp('computer round')
         game.curRound = 1;
         position = game.rootDFS();
+        moveTo(alphaAngles(position(1), position(2)), betaAngles(position(1), position(2)));
+        drop();
     end
     
     disp(position);
@@ -55,6 +61,35 @@ disp('draw');
 
 % Close connection to the NXT brick
 COM_CloseNXT(MyNXT);
+
+function waitStop(motor)
+    data = motor.ReadFromNXT();
+    pos = data.Position;
+    wait(0.1);
+    newData = motor.ReadFromNXT();
+    newPos = newData.Position;
+    while newPos ~= pos
+        pos = newPos;
+        wait(0.1);
+        newData = motor.ReadFromNXT();
+        newPos = newData.Position;
+    end
+end
+
+function drop()
+    mC = NXTMotor('C');
+    mC.SmoothStart = 0;
+    mC.SpeedRegulation = 1;
+    mC.ActionAtTachoLimit = 'Brake';
+    
+    %motion para to be adjusted
+    mC.Power = 10;
+    mC.TachoLimit = 40;
+    
+    mC.SentToNXT();
+    %wait till it stops
+    waitStop(mC);
+end
 
 function newPos = scan(alphaAngles, betaAngles, game)
     %iterate through each row:
@@ -81,40 +116,54 @@ function newPos = scan(alphaAngles, betaAngles, game)
 end
 
 function moveTo(alpha,beta)
-% move to a location
-mA = NXTMotor('A');
-mA.SmoothStart = 0;
-mA.SpeedRegulation = 0;
+    % move to a location
+    mA = NXTMotor('A');
+    mA.SmoothStart = 0;
+    mA.SpeedRegulation = 1;
 
-mB = NXTMotor('B');
-mB.SmoothStart = 0;
-mB.SpeedRegulation = 0;
+    mB = NXTMotor('B');
+    mB.SmoothStart = 0;
+    mB.SpeedRegulation = 1;
 
-speedA=40;
-speedB=100;
-%the gramma should be double checked when testing
-mA.ActionAtTachoLimit = 'Brake';
-mB.ActionAtTachoLimit = 'Brake';
+    speedA=10;
+    speedB=40;
+    %the gramma should be double checked when testing
+    mA.ActionAtTachoLimit = 'Brake';
+    mB.ActionAtTachoLimit = 'Brake';
 
-%need to check gramma
-data = mA.readFromNXT();
-position = data.position;
-if position(1)<aplha
-	mA.Power = speedA;
-	mA.TachoLimit = alpha-position(1);
-else
-	mA.Power = -speed;
-	mA.TachoLimit = position(1)-alpha;
-end
-data = mB.readFromNXT();
-position = data.position;
-if position(2)<beta
-	mB.Power = speedB;
-	mB.TachoLimit = beta-position(2);
-else
-	mB.Power = -speed;
-	mB.TachoLimit = position(2)-beta;
-end
-mA.SendToNXT();
-mB.SendToNXT();
+    %need to check gramma
+    data = mA.ReadFromNXT();
+    position = data.Position;
+    disp('cool');
+    disp(position);
+    disp(alpha);
+    if position ~= alpha
+        if position<alpha
+            mA.Power = speedA;
+            mA.TachoLimit = alpha-position;
+        else
+            mA.Power = -speedA;
+            mA.TachoLimit = position-alpha;
+        end
+    end
+
+    data = mB.ReadFromNXT();
+    position = data.Position;
+    disp('cool');
+    disp(position);
+    disp(beta);
+    if position ~= beta
+        if position<beta
+            mB.Power = speedB;
+            mB.TachoLimit = beta-position;
+        else
+            mB.Power = -speedB;
+            mB.TachoLimit = position-beta;
+        end
+    end
+    mA.SendToNXT();
+    mB.SendToNXT();
+    %wait till they stop
+    waitStop(mA);
+    waitStop(mB);
 end
