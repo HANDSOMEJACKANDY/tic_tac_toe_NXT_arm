@@ -33,6 +33,7 @@ for r=1:3
         
         if a == 1
             %get the postion for each motor
+            moveTo(alphaAngles(r, c), betaAngles(r, c));
             dataA = mA.ReadFromNXT();
             alphaAngles(r, c) = dataA.Position;
             dataB = mB.ReadFromNXT();
