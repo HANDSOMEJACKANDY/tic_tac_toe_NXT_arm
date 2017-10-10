@@ -1,6 +1,10 @@
 %starting of project of tic_tac_toe!
 game = Game;
 
+%load angle data
+load('alphaAngles.mat');
+load('betaAngles.mat');
+
 % Close connection to the NXT brick if there was one before
 COM_CloseNXT('all');
 
@@ -21,11 +25,12 @@ mC.SendToNXT();
 for i = 1:9
     disp(game.curGrid);
     if mod(i, 2) == 1
+        moveTo(630, 0);
         disp('human round')
         game.curRound = -1;
         %wait for the human round
         tic;
-        while toc < 5
+        while toc < 4
         end
         %scan for human input
         position =  scan(alphaAngles, betaAngles, game);
@@ -38,7 +43,8 @@ for i = 1:9
         game.curRound = 1;
         position = game.rootDFS();
         moveTo(alphaAngles(position(1), position(2)), betaAngles(position(1), position(2)));
-        drop();
+        drop(mC);
+        moveTo(630, 0);
     end
     
     disp(position);
@@ -58,35 +64,41 @@ for i = 1:9
     end
 end
 disp('draw');
+moveTo(0, 0);
 
 % Close connection to the NXT brick
 COM_CloseNXT(MyNXT);
 
+function wait(time)
+    tic;
+    while toc < time
+    end
+end
+
 function waitStop(motor)
     data = motor.ReadFromNXT();
     pos = data.Position;
-    wait(0.1);
+    wait(0.8);
     newData = motor.ReadFromNXT();
     newPos = newData.Position;
     while newPos ~= pos
         pos = newPos;
-        wait(0.1);
+        wait(0.8);
         newData = motor.ReadFromNXT();
         newPos = newData.Position;
     end
 end
 
-function drop()
-    mC = NXTMotor('C');
-    mC.SmoothStart = 0;
+function drop(mC)
+    mC.SmoothStart = 1;
     mC.SpeedRegulation = 1;
     mC.ActionAtTachoLimit = 'Brake';
     
     %motion para to be adjusted
-    mC.Power = 10;
-    mC.TachoLimit = 40;
+    mC.Power = 5;
+    mC.TachoLimit = 90;
     
-    mC.SentToNXT();
+    mC.SendToNXT();
     %wait till it stops
     waitStop(mC);
 end
@@ -97,12 +109,15 @@ function newPos = scan(alphaAngles, betaAngles, game)
     threshold = 500;
     flag = 0;
     newPos = [0, 0];
-    for r=1:3
-        for c=1:3
+    for c=1:3
+        for r=1:3
+            disp(game.curGrid);
             if game.curGrid(r, c) == 0
-                disp("previously empty")
+                disp("previously empty");
                 moveTo(alphaAngles(r, c), betaAngles(r, c));
                 if GetLight(SENSOR_1)> threshold
+                    disp('sensing:');
+                    disp(GetLight(SENSOR_1));
                     newPos = [r, c];
                     flag = 1; %signal to jump out after locating the new human round action
                     break;
@@ -125,8 +140,8 @@ function moveTo(alpha,beta)
     mB.SmoothStart = 0;
     mB.SpeedRegulation = 1;
 
-    speedA=10;
-    speedB=40;
+    speedA=20;
+    speedB=100;
     %the gramma should be double checked when testing
     mA.ActionAtTachoLimit = 'Brake';
     mB.ActionAtTachoLimit = 'Brake';
