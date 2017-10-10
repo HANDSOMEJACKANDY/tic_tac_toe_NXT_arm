@@ -18,14 +18,36 @@ mC = NXTMotor('C');
 mA.ResetPosition();
 mB.ResetPosition();
 mC.ResetPosition();
+mA.SmoothStart = 1;
+mB.SmoothStart = 1;
+mC.SmoothStart = 1;
+mA.SpeedRegulation = 1;
+mB.SpeedRegulation = 1;
+mC.SpeedRegulation = 1;
 mA.SendToNXT();
 mB.SendToNXT();
 mC.SendToNXT();
 
+%calibrate threshold
+input('please place only one paper in 1,1, press enter to continue');
+OpenLight(SENSOR_1, 'ACTIVE');
+moveTo(alphaAngles(1, 1), betaAngles(1, 1));
+paper = GetLight(SENSOR_1);
+moveTo(alphaAngles(2, 1), betaAngles(2, 1));
+noPaper = GetLight(SENSOR_1);
+threshold = noPaper * 0.5 + paper * 0.5;
+disp('threshold noPaper paper');
+disp(threshold);
+disp(noPaper);
+disp(paper);
+
+%record win
+whichWin = 0;
+
 for i = 1:9
     disp(game.curGrid);
     if mod(i, 2) == 1
-        moveTo(630, 0);
+        moveTo(560, 0);
         disp('human round')
         game.curRound = -1;
         %wait for the human round
@@ -33,7 +55,7 @@ for i = 1:9
         while toc < 4
         end
         %scan for human input
-        position =  scan(alphaAngles, betaAngles, game);
+        position =  scan(alphaAngles, betaAngles, game, threshold);
         if position(1) == 0 && position(0) == 0
             disp('no piece scanned');
             break;
@@ -44,7 +66,7 @@ for i = 1:9
         position = game.rootDFS();
         moveTo(alphaAngles(position(1), position(2)), betaAngles(position(1), position(2)));
         drop(mC);
-        moveTo(630, 0);
+        moveTo(560, 0);
     end
     
     disp(position);
@@ -53,7 +75,6 @@ for i = 1:9
     disp(game.curGrid);
     %check for winner
     whichWin = game.checkWin();
-    disp(whichWin);
     if whichWin ~= 0
         if whichWin == 1
             disp('comp win');
@@ -63,11 +84,43 @@ for i = 1:9
         break;
     end
 end
-disp('draw');
+if whichWin == 0
+    disp('draw');
+end
+
+whichWin = 1;
+showResult(whichWin);
 moveTo(0, 0);
 
 % Close connection to the NXT brick
 COM_CloseNXT(MyNXT);
+
+function showResult(whichWin)
+    if whichWin == 1
+        %let B oscilate
+        mA = NXTMotor('A');
+        mA.SmoothStart = 0;
+        mA.Power = 50;
+        mA.SendToNXT();
+        for i=1:10
+            wait(0.3)
+            if mod(i, 2) == 0
+                mA.Power = 100;
+            else
+                mA.Power = -100;
+            end
+            mA.SendToNXT();
+        end
+        mA.Stop('off');
+    elseif whichWin == 0
+        %let C roll
+        mC = NXTMotor('C');
+        mC.TachoLimit = 5000;
+        mC.Power = 100;
+        mC.SendToNXT();
+        mC.Stop('off');
+    end
+end
 
 function wait(time)
     tic;
@@ -103,10 +156,9 @@ function drop(mC)
     waitStop(mC);
 end
 
-function newPos = scan(alphaAngles, betaAngles, game)
+function newPos = scan(alphaAngles, betaAngles, game, threshold)
     %iterate through each row:
     OpenLight(SENSOR_1, 'ACTIVE');
-    threshold = 500;
     flag = 0;
     newPos = [0, 0];
     for c=1:3
@@ -133,11 +185,11 @@ end
 function moveTo(alpha,beta)
     % move to a location
     mA = NXTMotor('A');
-    mA.SmoothStart = 0;
+    mA.SmoothStart = 1;
     mA.SpeedRegulation = 1;
 
     mB = NXTMotor('B');
-    mB.SmoothStart = 0;
+    mB.SmoothStart = 1;
     mB.SpeedRegulation = 1;
 
     speedA=20;

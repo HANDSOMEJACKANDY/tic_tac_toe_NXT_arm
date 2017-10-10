@@ -16,6 +16,12 @@ mC = NXTMotor('C');
 mA.ResetPosition();
 mB.ResetPosition();
 mC.ResetPosition();
+mA.SmoothStart = 1;
+mB.SmoothStart = 1;
+mC.SmoothStart = 1;
+mA.SpeedRegulation = 1;
+mB.SpeedRegulation = 1;
+mC.SpeedRegulation = 1;
 mA.SendToNXT();
 mB.SendToNXT();
 mC.SendToNXT();
@@ -24,16 +30,22 @@ mC.SendToNXT();
 mA.Stop('off');
 mB.Stop('off');
 mC.Stop('off');
+%open the light for light~
+OpenLight(SENSOR_1, 'ACTIVE');
 
-for r=1:3
-    for c=1:3
+for c=1:3
+    for r=1:3
         disp('manul adjustment ready for: ');
         disp([r, c]);
         a = input('press any button if position is ready for: ');
         
         if a == 1
             %get the postion for each motor
+            %move to the rough position
             moveTo(alphaAngles(r, c), betaAngles(r, c));
+            
+            %do tuning
+            a = input('press enter when ready');
             dataA = mA.ReadFromNXT();
             alphaAngles(r, c) = dataA.Position;
             dataB = mB.ReadFromNXT();
@@ -50,14 +62,16 @@ disp(betaAngles);
 save('alphaAngles.mat', 'alphaAngles');
 save('betaAngles.mat', 'betaAngles');
 
+moveTo(0, 0);
+
 %testing for file loader
 load('alphaAngles.mat');
 load('betaAngles.mat');
 %testing result:
 b = input('testing the movine (1), or scanning (2)');
 if b == 1
-    for r=1:3
-        for c=1:3
+    for c=1:3
+        for r=1:3
             disp('test for: ');
             disp([r, c]);
             a = input('press any button if position is ready for: ');
@@ -69,13 +83,28 @@ if b == 1
         end
     end
 else
+    %calibrate threshold
+    input('please place only one paper in 1,1, press enter to continue');
+    OpenLight(SENSOR_1, 'ACTIVE');
+    moveTo(alphaAngles(1, 1), betaAngles(1, 1));
+    paper = GetLight(SENSOR_1);
+    moveTo(alphaAngles(2, 1), betaAngles(2, 1));
+    noPaper = GetLight(SENSOR_1);
+    threshold = noPaper * 0.3 + paper * 0.7;
+    disp('threshold noPaper paper');
+    disp(threshold);
+    disp(noPaper);
+    disp(paper);
+    
     tempGame = Game;
-    tempPos = scan(alphaAngles, betaAngles, tempGame);
+    tempPos = scan(alphaAngles, betaAngles, tempGame, threshold);
     disp(tempPos);
     tempGame.putPiece(tempPos);
     disp(tempGame.curGrid);
     drop(mC);
 end
+
+moveTo(0, 0);
 mA.Stop('off');
 mB.Stop('off');
 COM_CloseNXT('all');
@@ -100,14 +129,13 @@ function drop(mC)
     waitStop(mC);
 end
 
-function newPos = scan(alphaAngles, betaAngles, game)
+function newPos = scan(alphaAngles, betaAngles, game, threshold)
     %iterate through each row:
     OpenLight(SENSOR_1, 'ACTIVE');
-    threshold = 500;
     flag = 0;
     newPos = [0, 0];
-    for r=1:3
-        for c=1:3
+    for c=1:3
+        for r=1:3
             disp(game.curGrid);
             if game.curGrid(r, c) == 0
                 disp("previously empty");
@@ -131,12 +159,12 @@ end
 function waitStop(motor)
     data = motor.ReadFromNXT();
     pos = data.Position;
-    wait(0.5);
+    wait(0.8);
     newData = motor.ReadFromNXT();
     newPos = newData.Position;
     while newPos ~= pos
         pos = newPos;
-        wait(0.5);
+        wait(0.8);
         newData = motor.ReadFromNXT();
         newPos = newData.Position;
     end
@@ -145,11 +173,11 @@ end
 function moveTo(alpha,beta)
     % move to a location
     mA = NXTMotor('A');
-    mA.SmoothStart = 0;
+    mA.SmoothStart = 1;
     mA.SpeedRegulation = 1;
 
     mB = NXTMotor('B');
-    mB.SmoothStart = 0;
+    mB.SmoothStart = 1;
     mB.SpeedRegulation = 1;
 
     speedA=20;
