@@ -1,4 +1,4 @@
-%read all angles for nine grids
+%read all angles for nine grid
 alphaAngles = zeros(3);
 betaAngles = zeros(3);
 load('alphaAngles.mat');
@@ -43,7 +43,8 @@ for c=1:3
             %get the postion for each motor
             %move to the rough position
             moveTo(alphaAngles(r, c), betaAngles(r, c));
-            
+            mA.Stop('off');
+            mB.Stop('off');
             %do tuning
             a = input('press enter when ready');
             dataA = mA.ReadFromNXT();
@@ -79,6 +80,7 @@ if b == 1
             %moveIt
             if a == 1
                 moveTo(alphaAngles(r, c), betaAngles(r, c));
+                drop(mC);
             end
         end
     end
@@ -95,8 +97,11 @@ else
     disp(threshold);
     disp(noPaper);
     disp(paper);
+    moveTo(0, 0);
     
     tempGame = Game;
+    tempGame.curGrid(1, 1) = 1;
+    tempGame.curGrid(2, 1) = 1;
     tempPos = scan(alphaAngles, betaAngles, tempGame, threshold);
     disp(tempPos);
     tempGame.putPiece(tempPos);
@@ -136,16 +141,18 @@ function newPos = scan(alphaAngles, betaAngles, game, threshold)
     newPos = [0, 0];
     for c=1:3
         for r=1:3
-            disp(game.curGrid);
             if game.curGrid(r, c) == 0
                 disp("previously empty");
                 moveTo(alphaAngles(r, c), betaAngles(r, c));
                 if GetLight(SENSOR_1)> threshold
-                    disp('sensing:');
+                    disp('sensing found:');
                     disp(GetLight(SENSOR_1));
                     newPos = [r, c];
                     flag = 1; %signal to jump out after locating the new human round action
                     break;
+                else
+                    disp('sensing nothing:');
+                    disp(GetLight(SENSOR_1));
                 end
             end
         end
@@ -183,15 +190,12 @@ function moveTo(alpha,beta)
     speedA=20;
     speedB=100;
     %the gramma should be double checked when testing
-    mA.ActionAtTachoLimit = 'Brake';
-    mB.ActionAtTachoLimit = 'Brake';
+    mA.ActionAtTachoLimit = 'HoldBrake';
+    mB.ActionAtTachoLimit = 'HoldBrake';
 
     %need to check gramma
     data = mA.ReadFromNXT();
     position = data.Position;
-    disp('cool');
-    disp(position);
-    disp(alpha);
     if position ~= alpha
         if position<alpha
             mA.Power = speedA;
@@ -204,9 +208,6 @@ function moveTo(alpha,beta)
 
     data = mB.ReadFromNXT();
     position = data.Position;
-    disp('cool');
-    disp(position);
-    disp(beta);
     if position ~= beta
         if position<beta
             mB.Power = speedB;
