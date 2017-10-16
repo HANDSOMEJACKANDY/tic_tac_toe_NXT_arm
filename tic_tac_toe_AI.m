@@ -29,7 +29,11 @@ mB.SendToNXT();
 mC.SendToNXT();
 
 %calibrate threshold
-input('please place only one paper in 1,1, press enter to continue');
+disp('please place only one paper in 1,1, press the touch sensor to continue');
+OpenSwitch(SENSOR_2);
+while GetSwitch(SENSOR_2) == 0
+end
+CloseSensor(SENSOR_2);
 OpenLight(SENSOR_1, 'ACTIVE');
 moveTo(alphaAngles(1, 1), betaAngles(1, 1));
 paper = GetLight(SENSOR_1);
